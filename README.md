@@ -1,27 +1,38 @@
-# BankCore
+<h1 align="center">💳 BankCore</h1>
 
-A terminal-based banking system written in C++ with direct MySQL C API integration. Manage bank accounts through an interactive, menu-driven CLI.
+<p align="center">
+  <em>A terminal-native banking system in C++ with a MySQL backbone.</em>
+</p>
 
-## Features
-
-- Create new bank accounts with a starting balance
-- View all existing accounts
-- Persistent storage via MySQL
-- SQL injection protection via `mysql_real_escape_string`
-- Animated rainbow ASCII banner on startup (Windows + Unix ANSI support)
-
-## Tech stack
-
-- **Language:** C++17
-- **Database:** MySQL 8.0 (via `libmysqlclient` / MariaDB connector)
-- **Build:** GNU Make with portable `mysql_config` detection
-- **Runtime:** Docker (recommended) or native Linux / macOS
+<p align="center">
+  <a href="https://github.com/smvckerz/BankofMunoz/actions/workflows/ci.yml">
+    <img alt="CI"          src="https://github.com/smvckerz/BankofMunoz/actions/workflows/ci.yml/badge.svg">
+  </a>
+  <img alt="C++17"         src="https://img.shields.io/badge/C%2B%2B-17-00599C?logo=cplusplus&logoColor=white">
+  <img alt="MySQL 8"       src="https://img.shields.io/badge/MySQL-8.0-4479A1?logo=mysql&logoColor=white">
+  <img alt="Docker"        src="https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white">
+  <img alt="License: MIT"  src="https://img.shields.io/badge/License-MIT-yellow.svg">
+</p>
 
 ---
 
-## Quick start
+## ✨ What it is
 
-The only prerequisite is [Docker Desktop](https://www.docker.com/products/docker-desktop/). Once it's installed and running:
+BankCore is a self-contained banking CLI: account creation, balance management, persistent storage — all driven through a menu-driven terminal interface with an animated rainbow startup banner. It talks to MySQL directly via the C API (no ORM), with proper input escaping to keep SQL injection at bay.
+
+```
+    ____              __            ____   __  ___
+   / __ )____ _____  / /__   ____  / __/  /  |/  /_  ______  ____  ____
+  / __  / __ `/ __ \/ //_/  / __ \/ /_   / /|_/ / / / / __ \/ __ \/_  /
+ / /_/ / /_/ / / / / ,<    / /_/ / __/  / /  / / /_/ / / / / /_/ / / /_
+/_____/\__,_/_/ /_/_/|_|   \____/_/    /_/  /_/\__,_/_/ /_/\____/ /___/
+```
+
+---
+
+## 🚀 Quick start
+
+The only prerequisite is **[Docker Desktop](https://www.docker.com/products/docker-desktop/)**.
 
 ```bash
 git clone git@github.com:smvckerz/BankofMunoz.git
@@ -29,50 +40,78 @@ cd BankofMunoz
 ./bankcore
 ```
 
-That's it. The script handles everything: creates your `.env` from the template on first run, brings up MySQL, builds the app container, and drops you into the interactive menu.
+That's it. The launcher script bootstraps `.env` from the template, brings up a MySQL 8 container, builds the app image, and drops you straight into the interactive menu.
 
-### Other commands
+> **Windows:** run via Git Bash, MSYS2, or WSL — the launcher is a POSIX shell script.
 
-```bash
-./bankcore         # start the app (default)
-./bankcore stop    # shut down containers, preserve data
-./bankcore reset   # shut down AND wipe all account data
-./bankcore logs    # tail the MySQL container logs
-./bankcore help    # show usage
+---
+
+## 🎛️ Commands
+
+| Command              | What it does                                       |
+| -------------------- | -------------------------------------------------- |
+| `./bankcore`         | Start everything and launch the interactive menu   |
+| `./bankcore stop`    | Shut down containers, **preserve** account data    |
+| `./bankcore reset`   | Shut down and **wipe** the data volume (prompts)   |
+| `./bankcore logs`    | Tail the MySQL container logs                      |
+| `./bankcore help`    | Print the available subcommands                    |
+
+---
+
+## 🧱 Architecture
+
+```
+┌─────────────────────────────────┐         ┌────────────────────────┐
+│        bankcore-app             │         │      bankcore-db       │
+│   (Debian slim, non-root)       │  ──→    │   (mysql:8.0 official) │
+│   • C++17 binary                │  TCP    │   • schema/init.sql    │
+│   • libmariadb3 runtime         │ :3306   │   • named volume       │
+│   • reads env at runtime        │         │   • healthchecked      │
+└─────────────────────────────────┘         └────────────────────────┘
+                    ↑                                  ↑
+                    └──── docker-compose.yml ──────────┘
+                         (bankcore-net bridge)
 ```
 
-> **Windows users:** Run via Git Bash, MSYS2, or WSL — the launcher is a POSIX shell script. PowerShell / CMD aren't supported directly.
+**Connection config** is resolved at runtime in this order:
+
+1. Environment variables — `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`
+2. Compile-time defaults baked into `include/config.h`
+
+For Docker, env vars come from `.env` via `docker-compose.yml`. For native builds, you set them yourself (or rely on the `config.h` defaults).
 
 ---
 
-## Configuration
+## 🛠️ Tech stack
 
-BankCore reads connection parameters in this order (highest precedence first):
-
-1. **Environment variables** — `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`
-2. **Compile-time defaults** — values from `include/config.h`
-
-This means the same binary works in local dev, Docker, and production without rebuilding. For Docker, credentials come from `.env`. For native builds, edit `include/config.h`.
+- **Language:** C++17
+- **Database driver:** MySQL C API / `libmysqlclient` (MariaDB connector on Debian)
+- **Build:** GNU Make with portable `mysql_config` detection
+- **Container runtime:** Multi-stage Docker build → minimal `debian:bookworm-slim` runtime
+- **CI:** GitHub Actions (native build on Ubuntu + macOS, Docker image build)
 
 ---
 
-## Manual setup (native build, no Docker)
+## 🧪 Manual build (no Docker)
 
-If you'd rather build and run on the host directly.
+For when you want to build directly against a host MySQL.
+
+<details>
+<summary><strong>Click to expand</strong></summary>
 
 ### Prerequisites
 
-| Platform        | Required packages                                            |
-| --------------- | ------------------------------------------------------------ |
-| macOS           | Xcode CLI tools, Homebrew, `mysql-client`, `pkg-config`      |
-| Debian / Ubuntu | `build-essential`, `default-libmysqlclient-dev`, `mysql-server`, `pkg-config` |
-| Fedora / RHEL   | `gcc-c++`, `make`, `mysql-devel`, `mysql-server`, `pkgconf-pkg-config` |
-| Arch            | `base-devel`, `mariadb`, `mariadb-libs`, `pkgconf`           |
+| Platform        | Packages                                                                       |
+| --------------- | ------------------------------------------------------------------------------ |
+| macOS           | Xcode CLI tools, Homebrew, `mysql-client`, `pkg-config`                        |
+| Debian / Ubuntu | `build-essential`, `default-libmysqlclient-dev`, `mysql-server`, `pkg-config`  |
+| Fedora / RHEL   | `gcc-c++`, `make`, `mysql-devel`, `mysql-server`, `pkgconf-pkg-config`         |
+| Arch            | `base-devel`, `mariadb`, `mariadb-libs`, `pkgconf`                             |
 
 ### Steps
 
 ```bash
-# 1. Configure defaults (used if env vars aren't set)
+# 1. Set compile-time defaults (overridable via env vars at runtime)
 cp include/config.h.example include/config.h
 $EDITOR include/config.h
 
@@ -86,35 +125,36 @@ make
 ./db
 ```
 
+</details>
+
 ---
 
-## Project structure
+## 📁 Project structure
 
 ```
 bankcore/
-├── src/                # implementation
-│   ├── main.cpp        # entry point
-│   ├── database.cpp    # MySQL connection + query logic
-│   ├── menu.cpp        # interactive CLI menu
-│   └── banner.cpp      # animated ASCII banner
-├── include/            # headers
-│   ├── database.h
-│   ├── menu.h
-│   ├── banner.h
-│   ├── config.h        # local credentials (gitignored)
+├── src/                  # C++ implementation
+│   ├── main.cpp
+│   ├── database.cpp
+│   ├── menu.cpp
+│   └── banner.cpp
+├── include/              # Headers + config template
+│   ├── *.h
 │   └── config.h.example
 ├── schema/
-│   └── init.sql        # database + table DDL
+│   └── init.sql          # Auto-loaded by the mysql container
 ├── .github/workflows/
-│   └── ci.yml          # GitHub Actions build verification
-├── bankcore            # launcher script
-├── Dockerfile          # multi-stage build, non-root runtime
-├── docker-compose.yml  # app + mysql orchestration
-├── Makefile            # portable build rules
-├── .env.example        # template for docker-compose
+│   └── ci.yml            # Native + Docker build verification
+├── bankcore              # Launcher script (POSIX shell)
+├── Dockerfile            # Multi-stage build → non-root runtime
+├── docker-compose.yml    # app + db orchestration
+├── Makefile              # Portable, mysql_config-aware
+├── .env.example          # Template for credentials
 └── README.md
 ```
 
-## License
+---
 
-See [LICENSE](LICENSE).
+## 📜 License
+
+[MIT](LICENSE) — © Eduardo Munoz
