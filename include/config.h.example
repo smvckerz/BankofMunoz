@@ -1,0 +1,8 @@
+#ifndef CONFIG_H
+#define CONFIG_H
+
+// GitHub Template: Rename this file to 'config.h' and insert your own local database settings
+#define DB_PASSWORD "YOUR_PASSWORD_HERE"
+#define DB_NAME "bankcore"
+
+#endif
