@@ -34,6 +34,7 @@ jobs:
           brew install mysql-client pkg-config
           echo "$(brew --prefix mysql-client)/bin" >> $GITHUB_PATH
           echo "PKG_CONFIG_PATH=$(brew --prefix mysql-client)/lib/pkgconfig" >> $GITHUB_ENV
+          echo "CPLUS_INCLUDE_PATH=$(brew --prefix mysql-client)/include" >> $GITHUB_ENV
 
       - name: Generate placeholder config.h
         run: cp include/config.h.example include/config.h
