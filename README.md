@@ -27,6 +27,7 @@ A terminal-based banking system built in C++ with MySQL. Manage bank accounts th
 
 ```bash
 https://github.com/smvckerz/BankofMunoz.git (https)
+git@github.com:smvckerz/BankofMunoz.git (SSH)
 
 cd bankcore
 ```
