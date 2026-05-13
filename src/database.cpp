@@ -91,7 +91,7 @@ void disconnectDatabase(MYSQL* conn)
 // Account operations
 // ---------------------------------------------------------------------------
 
-bool createAccount(MYSQL* conn, const string& name, double balance)
+bool createAccount(MYSQL* conn, const string& name, double balance, int pin)
 {
     if (conn == nullptr)
     {
@@ -101,9 +101,9 @@ bool createAccount(MYSQL* conn, const string& name, double balance)
 
     string escapedName = escapeString(conn, name);
 
-    string query = "INSERT INTO accounts (name, balance) VALUES ('" +
+    string query = "INSERT INTO accounts (name, balance, pin) VALUES ('" +
                    escapedName + "', " +
-                   to_string(balance) + ")";
+                   to_string(balance) + ", " + to_string(pin) + ")";
 
     if (mysql_query(conn, query.c_str()))
     {
@@ -113,7 +113,7 @@ bool createAccount(MYSQL* conn, const string& name, double balance)
 
     cout << fixed << setprecision(2);
     cout << "Account created for " << name
-         << " with balance $" << balance << endl;
+         << " with balance $" << balance << " and pin: " << pin << endl;
 
     return true;
 }
@@ -126,7 +126,7 @@ void viewAccounts(MYSQL* conn)
         return;
     }
 
-    string query = "SELECT id, name, balance FROM accounts ORDER BY id";
+    string query = "SELECT id, name, balance, pin FROM accounts ORDER BY id";
 
     if (mysql_query(conn, query.c_str()))
     {
@@ -147,7 +147,8 @@ void viewAccounts(MYSQL* conn)
     cout << "\n================ ACCOUNT LIST ================\n";
     cout << left << setw(10) << "ID"
          << setw(25) << "Name"
-         << setw(15) << "Balance" << endl;
+         << setw(15) << "Balance"
+         << setw(15) << "Pin" << endl;
     cout << "----------------------------------------------\n";
 
     while ((row = mysql_fetch_row(result)))
@@ -160,4 +161,36 @@ void viewAccounts(MYSQL* conn)
     cout << "==============================================\n\n";
 
     mysql_free_result(result);
+}
+
+bool authenticateAccount(MYSQL* conn, int id, int pin)
+{
+    if (conn == nullptr) return false;
+
+    string query = "SELECT pin FROM accounts WHERE id = " + to_string(id);
+
+    if (mysql_query(conn, query.c_str()))
+    {
+        cerr << "Query error: " << mysql_error(conn) << endl;
+        return false;
+    }
+
+    MYSQL_RES* result = mysql_store_result(conn);
+    if (result == nullptr) return false;
+
+    MYSQL_ROW row = mysql_fetch_row(result);
+    bool authenticated = false;
+
+    if (row && row[0])
+    {
+        int storedPin = std::atoi(row[0]);
+        authenticated = (storedPin == pin);
+    }
+
+    mysql_free_result(result);
+
+    if (!authenticated)
+        cerr << "Invalid account ID or PIN." << endl;
+
+    return authenticated;
 }

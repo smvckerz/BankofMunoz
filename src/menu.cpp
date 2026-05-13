@@ -14,8 +14,9 @@ static int getChoice()
     {
         cout << "============== MENU ==============\n";
         cout << "1. Create Account\n";
-        cout << "2. View Accounts\n";
-        cout << "3. Exit\n";
+        cout << "2. Login to Account\n";
+        cout << "3. View Accounts\n";
+        cout << "4. Exit\n";
         cout << "Choose an option: ";
 
         if (cin >> choice)
@@ -57,6 +58,24 @@ static double getBalanceInput()
     }
 }
 
+static int GetPinInput()
+{
+    int pin;
+
+    while(pin)
+    {
+        cout << "Set 4-Digit Pin";
+        if(cin >> pin && pin >= 1000 && pin <= 9999)
+        {
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            return pin;
+        }
+        cout << "Pin has to be greater than 1000 and less than 9999, try again." << endl;
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    }
+}
+
 static void handleCreateAccount(MYSQL* conn)
 {
     string name;
@@ -70,8 +89,45 @@ static void handleCreateAccount(MYSQL* conn)
     }
 
     double balance = getBalanceInput();
-    createAccount(conn, name, balance);
+    int pin = GetPinInput();
+    createAccount(conn, name, balance, pin);
     cout << endl;
+}
+
+static void handleLogin (MYSQL* conn)
+{
+    int id;
+    cout << "Enter Account ID: ";
+    cin >> id;
+
+    if(!(cin >> id))
+    {
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        cout << "Invalid ID.\n\n";
+        return;
+    }
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+    int pin;
+    cout << "Enter PIN: ";
+    if (!(cin >> pin))
+    {
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        cout << "Invalid PIN.\n\n";
+        return;
+    }
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+    if(authenticateAccount(conn, id, pin))
+    {
+        cout << "Access granted. Welcome.\n\n";
+    }
+    else
+    {
+        cout << "Access denied.\n\n" << endl;
+    }
 }
 
 void runMenu(MYSQL* conn)
@@ -94,7 +150,11 @@ void runMenu(MYSQL* conn)
                 break;
 
             case 3:
-                cout << "Exiting BankCore. Goodbye.\n";
+                handleLogin(conn);
+                break;
+                
+            case 4:
+                cout << "Exiting BankCore, Goodbye.\n";
                 running = false;
                 break;
 
