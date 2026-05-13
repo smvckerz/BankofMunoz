@@ -4,8 +4,32 @@
 #include <iomanip>
 #include <limits>
 #include <vector>
+#include <cstdlib>
+#include <string>
 
 using namespace std;
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+// Returns the value of `name` from the environment, or `fallback` if unset/empty.
+static const char* envOr(const char* name, const char* fallback)
+{
+    const char* value = std::getenv(name);
+    return (value && *value) ? value : fallback;
+}
+
+// Same idea for an unsigned int port.
+static unsigned int envOrUInt(const char* name, unsigned int fallback)
+{
+    const char* value = std::getenv(name);
+    if (value && *value)
+    {
+        return static_cast<unsigned int>(std::atoi(value));
+    }
+    return fallback;
+}
 
 static string escapeString(MYSQL* conn, const string& input)
 {
@@ -23,6 +47,10 @@ static string escapeString(MYSQL* conn, const string& input)
     return escaped;
 }
 
+// ---------------------------------------------------------------------------
+// Connection lifecycle
+// ---------------------------------------------------------------------------
+
 MYSQL* connectDatabase()
 {
     MYSQL* conn = mysql_init(nullptr);
@@ -33,14 +61,21 @@ MYSQL* connectDatabase()
         return nullptr;
     }
 
-    if (!mysql_real_connect(conn, "localhost", "root", DB_PASSWORD, DB_NAME, 0, nullptr, 0))
+    // Runtime env vars take precedence over compile-time defaults in config.h.
+    const char*  host     = envOr     ("DB_HOST",     DB_HOST);
+    unsigned int port     = envOrUInt ("DB_PORT",     DB_PORT);
+    const char*  user     = envOr     ("DB_USER",     DB_USER);
+    const char*  password = envOr     ("DB_PASSWORD", DB_PASSWORD);
+    const char*  dbname   = envOr     ("DB_NAME",     DB_NAME);
+
+    if (!mysql_real_connect(conn, host, user, password, dbname, port, nullptr, 0))
     {
         cerr << "Connection failed: " << mysql_error(conn) << endl;
         mysql_close(conn);
         return nullptr;
     }
 
-    cout << "Connected to BankCore database successfully." << endl;
+    cout << "Connected to BankCore database (" << host << ":" << port << ") successfully." << endl;
     return conn;
 }
 
@@ -51,6 +86,10 @@ void disconnectDatabase(MYSQL* conn)
         mysql_close(conn);
     }
 }
+
+// ---------------------------------------------------------------------------
+// Account operations
+// ---------------------------------------------------------------------------
 
 bool createAccount(MYSQL* conn, const string& name, double balance)
 {

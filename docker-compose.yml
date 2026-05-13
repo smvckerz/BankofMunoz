@@ -1,0 +1,58 @@
+# BankCore — local orchestration
+#
+# Brings up a MySQL 8 instance and the BankCore CLI in one network.
+# Schema is auto-loaded from ./schema on first start of the db volume.
+# Credentials are passed to the app as runtime environment variables.
+#
+# Usage:
+#   docker compose up --build       # start everything
+#   docker compose run --rm app     # rerun the CLI without restarting db
+#   docker compose down             # stop, keep data
+#   docker compose down -v          # stop and wipe data volume
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: bankcore-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root_pw}
+      MYSQL_DATABASE:      ${DB_NAME:-bankcore}
+      MYSQL_USER:          ${DB_USER:-bankcore}
+      MYSQL_PASSWORD:      ${DB_PASSWORD:-bankcore_pw}
+    volumes:
+      - bankcore_data:/var/lib/mysql
+      - ./schema:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD:-root_pw}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - bankcore-net
+
+  app:
+    build:
+      context: .
+    container_name: bankcore-app
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST:     db
+      DB_PORT:     "3306"
+      DB_USER:     ${DB_USER:-bankcore}
+      DB_PASSWORD: ${DB_PASSWORD:-bankcore_pw}
+      DB_NAME:     ${DB_NAME:-bankcore}
+    stdin_open: true     # keep STDIN open for the menu loop
+    tty: true            # allocate a TTY for the CLI
+    networks:
+      - bankcore-net
+
+networks:
+  bankcore-net:
+    driver: bridge
+
+volumes:
+  bankcore_data:

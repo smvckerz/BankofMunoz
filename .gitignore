@@ -1,0 +1,24 @@
+# Build artifacts
+*.o
+*.obj
+*.d
+*.dSYM/
+db
+db.exe
+debug
+debug.exe
+
+# Local configuration (never commit)
+include/config.h
+.env
+
+# Editor / IDE state
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS clutter
+.DS_Store
+Thumbs.db
+desktop.ini

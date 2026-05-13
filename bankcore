@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+# BankCore — entry point
+# Wraps `docker compose` with the right invocation for an interactive CLI.
+#
+# Usage:
+#   ./bankcore         # start everything and drop into the menu
+#   ./bankcore stop    # shut down the db (keeps data)
+#   ./bankcore reset   # shut down AND wipe the data volume
+#   ./bankcore logs    # tail the db logs
+#   ./bankcore help    # show this help
+
+set -e
+
+# ---------------------------------------------------------------------------
+# Preflight
+# ---------------------------------------------------------------------------
+if ! command -v docker >/dev/null 2>&1; then
+    echo "Error: Docker is not installed or not on PATH."
+    echo "Install Docker Desktop from https://www.docker.com/products/docker-desktop/"
+    exit 1
+fi
+
+if ! docker info >/dev/null 2>&1; then
+    echo "Error: Docker daemon is not running."
+    echo "Start Docker Desktop and wait for the whale icon to stop animating."
+    exit 1
+fi
+
+# Create .env from template on first run so users don't have to remember.
+if [ ! -f .env ] && [ -f .env.example ]; then
+    cp .env.example .env
+    echo "[+] Created .env from .env.example (edit it if you want different credentials)."
+fi
+
+# ---------------------------------------------------------------------------
+# Subcommands
+# ---------------------------------------------------------------------------
+case "${1:-run}" in
+    run|"")
+        echo "[*] Starting BankCore..."
+        docker compose run --rm --build app
+        ;;
+
+    stop)
+        echo "[*] Stopping containers (data preserved)..."
+        docker compose down
+        ;;
+
+    reset)
+        echo "[!] This will delete ALL BankCore data."
+        read -rp "    Are you sure? [y/N] " confirm
+        if [[ "$confirm" =~ ^[Yy]$ ]]; then
+            docker compose down -v
+            echo "[+] All data wiped."
+        else
+            echo "[-] Cancelled."
+        fi
+        ;;
+
+    logs)
+        docker compose logs -f db
+        ;;
+
+    help|-h|--help)
+        sed -n '2,9p' "$0" | sed 's/^# \{0,1\}//'
+        ;;
+
+    *)
+        echo "Unknown command: $1"
+        echo "Run './bankcore help' for usage."
+        exit 1
+        ;;
+esac
