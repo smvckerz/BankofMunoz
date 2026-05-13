@@ -26,7 +26,8 @@ A terminal-based banking system built in C++ with MySQL. Manage bank accounts th
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/yourusername/bankcore.git
+https://github.com/smvckerz/BankofMunoz.git (https)
+
 cd bankcore
 ```
 
