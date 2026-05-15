@@ -118,6 +118,42 @@ bool createAccount(MYSQL* conn, const string& name, double balance, int pin)
     return true;
 }
 
+void getBalance(MYSQL* conn, int id)
+{
+    if (conn == nullptr)
+    {
+        cerr << "Database connection is null." << endl;
+        return;
+    }
+
+    string query = "SELECT balance FROM accounts WHERE id = " + to_string(id);
+    if (mysql_query(conn, query.c_str()))
+    {
+        cerr << "Error retrieving accounts: " << mysql_error(conn) << endl;
+        return;
+    }
+
+    MYSQL_RES* result = mysql_store_result(conn);
+
+    if (result == nullptr) 
+    {
+        return;
+    }
+
+    MYSQL_ROW row = mysql_fetch_row(result);
+
+    if (row && row[0])
+    {
+        cout << "Your current balance: $" << (row[0]) << endl;
+    }
+    else
+    {
+        cout << "Account not found." << endl;
+    }
+
+    mysql_free_result(result);
+}
+
 void viewAccounts(MYSQL* conn)
 {
     if (conn == nullptr)
@@ -165,7 +201,10 @@ void viewAccounts(MYSQL* conn)
 
 bool authenticateAccount(MYSQL* conn, int id, int pin)
 {
-    if (conn == nullptr) return false;
+    if (conn == nullptr) 
+    {
+        return false;
+    }
 
     string query = "SELECT pin FROM accounts WHERE id = " + to_string(id);
 
@@ -176,7 +215,10 @@ bool authenticateAccount(MYSQL* conn, int id, int pin)
     }
 
     MYSQL_RES* result = mysql_store_result(conn);
-    if (result == nullptr) return false;
+    if (result == nullptr) 
+    {
+        return false;
+    }
 
     MYSQL_ROW row = mysql_fetch_row(result);
     bool authenticated = false;
@@ -190,7 +232,9 @@ bool authenticateAccount(MYSQL* conn, int id, int pin)
     mysql_free_result(result);
 
     if (!authenticated)
+    {
         cerr << "Invalid account ID or PIN." << endl;
+    }
 
     return authenticated;
 }

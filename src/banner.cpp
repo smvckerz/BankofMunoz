@@ -32,6 +32,7 @@ static void enableANSI()
     {
         SetConsoleMode(hOut, dwMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
     }
+    SetConsoleOutputCP(CP_UTF8);
 #endif
 }
 
