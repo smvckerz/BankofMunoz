@@ -3,7 +3,10 @@
 
 #include <mysql/mysql.h>
 
-void runMenu(MYSQL* conn);
-void userAccount(MYSQL* conn, int id);
+void drawMainMenu();
+void drawAccountMenu(int id);
+int promptChoice();
+double getBalanceInput();
+int getPinInput();
 
 #endif

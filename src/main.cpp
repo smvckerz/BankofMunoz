@@ -2,6 +2,7 @@
 #include "banner.h"
 #include "database.h"
 #include "menu.h"
+#include "actions.h"   // ← ADD THIS LINE
 
 using namespace std;
 

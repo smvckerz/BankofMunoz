@@ -28,7 +28,7 @@ endif
 
 MYSQL_FLAGS := $(shell $(MYSQL_CONFIG) --cflags --libs)
 
-SRC := src/main.cpp src/banner.cpp src/database.cpp src/menu.cpp
+SRC := src/main.cpp src/banner.cpp src/database.cpp src/menu.cpp src/actions.cpp
 HDR := include/banner.h include/database.h include/menu.h include/config.h
 BIN := db
 
